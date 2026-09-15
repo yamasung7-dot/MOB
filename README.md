@@ -2,7 +2,7 @@
 
 A lightweight Blockbench plugin designed to reduce unnecessary editor workload on mobile devices.
 
-## Current prototype — v0.4.0
+## Current prototype — v0.5.0
 
 - Adds a **MOP: Mobile Optimization** toggle to the **Tools** menu.
 - Automatically enables itself on Blockbench mobile.
@@ -11,16 +11,22 @@ A lightweight Blockbench plugin designed to reduce unnecessary editor workload o
 - Caps Blockbench's preview rendering at **30 FPS** while enabled.
 - Disables animation motion trails while enabled.
 - Disables element highlighting while enabled to reduce repeated highlight updates during pointer movement and selection changes.
+- Disables optional viewport grid geometry while enabled to reduce grid line rendering.
+- Disables flipbook texture playback during animation previews while enabled to avoid per-frame flipbook updates.
 - Restores the user's exact previous settings when MOP is disabled or unloaded.
 - Avoids custom render loops and keeps its own runtime overhead intentionally tiny.
+
+## Why the grid is disabled
+
+Blockbench's grid settings feed into `Canvas.buildGrid()`, which constructs viewport grid line geometry. MOP turns off the optional grid layers while optimization mode is active, reducing extra viewport geometry and draw work. The original grid configuration is restored when MOP is disabled.
+
+## Why flipbook animation is disabled
+
+Blockbench listens for animation frame display events and, when this option is enabled, calls the texture flipbook animator for each displayed animation frame. MOP disables that optional feature during optimization mode because it is unnecessary during ordinary modeling. The original setting is restored when MOP is disabled.
 
 ## Why 30 FPS?
 
 The goal of MOP is to reduce sustained GPU/CPU work rather than make Blockbench render faster. A 30 FPS cap gives the preview a predictable upper bound while leaving Blockbench's normal rendering and input systems in control.
-
-## Why disable element highlighting?
-
-Blockbench updates element highlights during viewport interaction and selection changes. MOP disables that optional visual effect during optimization mode to reduce repeated editor update work. The user's original setting is restored when MOP is disabled.
 
 ## Important design rule
 
