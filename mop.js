@@ -14,7 +14,8 @@ const MOP_SETTINGS = [
     'background_rendering',
     'shading',
     'fps_limit',
-    'motion_trails'
+    'motion_trails',
+    'highlight_cubes'
 ];
 
 function readSetting(key) {
@@ -54,6 +55,11 @@ function enableMOP() {
     // modeling. They are restored exactly when MOP is disabled.
     writeSetting('motion_trails', false);
 
+    // Element highlighting can trigger repeated highlight updates during
+    // pointer movement and selection changes. Disable it to reduce editor
+    // update work while keeping the normal viewport and tools intact.
+    writeSetting('highlight_cubes', false);
+
     enabled = true;
 }
 
@@ -80,7 +86,7 @@ Plugin.register('mop', {
     author: 'yamasung7-dot',
     description: 'Lightweight performance optimizations for Blockbench on mobile devices.',
     icon: 'speed',
-    version: '0.3.0',
+    version: '0.4.0',
     variant: 'both',
     min_version: '4.10.0',
 
