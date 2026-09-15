@@ -5,7 +5,9 @@
 
 let mopToggle;
 let previousSettings = null;
+let previousPixelRatios = new Map();
 let enabled = false;
+let resizeHandler = null;
 
 const MOP_SETTINGS = [
     'background_rendering', 'shading', 'fps_limit', 'motion_trails',
@@ -13,6 +15,11 @@ const MOP_SETTINGS = [
     'large_box', 'ground_plane', 'flipbook_textures_in_animation',
     'brush_cursor_3d', 'outlines_in_paint_mode'
 ];
+
+// High-DPI phone screens can make the preview render 4–9× as many pixels
+// as a 1× display. Keep the renderer at a modest mobile render scale while
+// leaving Blockbench's CSS/layout resolution untouched.
+const MOBILE_PIXEL_RATIO_CAP = 1.5;
 
 function readSetting(key) {
     if (typeof settings === 'undefined' || !settings[key]) return undefined;
@@ -23,6 +30,50 @@ function writeSetting(key, value) {
     if (typeof settings === 'undefined' || !settings[key]) return false;
     settings[key].value = value;
     return true;
+}
+
+function getPreviewCanvases() {
+    if (typeof document === 'undefined') return [];
+    return Array.from(document.querySelectorAll('.preview canvas'));
+}
+
+function applyMobilePixelRatio() {
+    if (typeof Blockbench === 'undefined' || !Blockbench.isMobile) return;
+
+    for (const canvas of getPreviewCanvases()) {
+        const preview = canvas.preview;
+        const renderer = preview && preview.renderer;
+        if (!renderer || typeof renderer.setPixelRatio !== 'function') continue;
+
+        if (!previousPixelRatios.has(renderer)) {
+            const current = typeof renderer.getPixelRatio === 'function'
+                ? renderer.getPixelRatio()
+                : window.devicePixelRatio || 1;
+            previousPixelRatios.set(renderer, current);
+        }
+
+        const target = Math.min(window.devicePixelRatio || 1, MOBILE_PIXEL_RATIO_CAP);
+        if (typeof renderer.getPixelRatio !== 'function' || renderer.getPixelRatio() !== target) {
+            renderer.setPixelRatio(target);
+            if (preview.width && preview.height && typeof renderer.setSize === 'function') {
+                renderer.setSize(preview.width, preview.height, false);
+            }
+        }
+    }
+}
+
+function restoreMobilePixelRatio() {
+    for (const [renderer, ratio] of previousPixelRatios) {
+        if (!renderer || typeof renderer.setPixelRatio !== 'function') continue;
+        renderer.setPixelRatio(ratio);
+
+        const canvas = renderer.domElement;
+        const preview = canvas && canvas.preview;
+        if (preview && preview.width && preview.height && typeof renderer.setSize === 'function') {
+            renderer.setSize(preview.width, preview.height, false);
+        }
+    }
+    previousPixelRatios.clear();
 }
 
 function enableMOP() {
@@ -51,10 +102,35 @@ function enableMOP() {
     writeSetting('outlines_in_paint_mode', false);
 
     enabled = true;
+
+    // Blockbench reapplies window.devicePixelRatio during preview resize.
+    // Re-apply our cap only after resize events; this is event-driven, not a
+    // permanent render loop, so MOP adds no per-frame work of its own.
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        resizeHandler = () => {
+            if (!enabled) return;
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(applyMobilePixelRatio);
+            } else {
+                applyMobilePixelRatio();
+            }
+        };
+        window.addEventListener('resize', resizeHandler, {passive: true});
+    }
+
+    applyMobilePixelRatio();
 }
 
 function disableMOP() {
     if (!enabled) return;
+
+    if (resizeHandler && typeof window !== 'undefined') {
+        window.removeEventListener('resize', resizeHandler);
+        resizeHandler = null;
+    }
+
+    restoreMobilePixelRatio();
+
     if (previousSettings) {
         for (const [key, value] of Object.entries(previousSettings)) {
             writeSetting(key, value);
@@ -74,7 +150,7 @@ Plugin.register('mop', {
     author: 'yamasung7-dot',
     description: 'Lightweight performance optimizations for Blockbench on mobile devices.',
     icon: 'speed',
-    version: '0.7.0',
+    version: '0.8.0',
     variant: 'both',
     min_version: '4.10.0',
 
