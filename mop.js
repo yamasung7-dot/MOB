@@ -10,7 +10,8 @@ let enabled = false;
 const MOP_SETTINGS = [
     'background_rendering', 'shading', 'fps_limit', 'motion_trails',
     'highlight_cubes', 'grids', 'base_grid', 'large_grid', 'full_grid',
-    'large_box', 'ground_plane', 'flipbook_textures_in_animation'
+    'large_box', 'ground_plane', 'flipbook_textures_in_animation',
+    'brush_cursor_3d', 'outlines_in_paint_mode'
 ];
 
 function readSetting(key) {
@@ -45,6 +46,9 @@ function enableMOP() {
     // Blockbench's ground plane is a 4096×4096 Three.js plane.
     writeSetting('ground_plane', false);
     writeSetting('flipbook_textures_in_animation', false);
+    // Paint-mode helpers can add extra viewport geometry/update work.
+    writeSetting('brush_cursor_3d', false);
+    writeSetting('outlines_in_paint_mode', false);
 
     enabled = true;
 }
@@ -70,7 +74,7 @@ Plugin.register('mop', {
     author: 'yamasung7-dot',
     description: 'Lightweight performance optimizations for Blockbench on mobile devices.',
     icon: 'speed',
-    version: '0.6.0',
+    version: '0.7.0',
     variant: 'both',
     min_version: '4.10.0',
 
