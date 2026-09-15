@@ -15,7 +15,13 @@ const MOP_SETTINGS = [
     'shading',
     'fps_limit',
     'motion_trails',
-    'highlight_cubes'
+    'highlight_cubes',
+    'grids',
+    'base_grid',
+    'large_grid',
+    'full_grid',
+    'large_box',
+    'flipbook_textures_in_animation'
 ];
 
 function readSetting(key) {
@@ -60,6 +66,21 @@ function enableMOP() {
     // update work while keeping the normal viewport and tools intact.
     writeSetting('highlight_cubes', false);
 
+    // The grid is optional viewport geometry. Turning it off removes grid
+    // line geometry from the preview instead of merely hiding it with CSS.
+    // Keep the individual grid settings in the snapshot so the user's exact
+    // configuration is restored on disable/unload.
+    writeSetting('grids', false);
+    writeSetting('base_grid', false);
+    writeSetting('large_grid', false);
+    writeSetting('full_grid', false);
+    writeSetting('large_box', false);
+
+    // Flipbook textures are updated whenever an animation frame is displayed.
+    // They are not needed for normal modeling, so skip that extra animation
+    // work while optimization mode is active.
+    writeSetting('flipbook_textures_in_animation', false);
+
     enabled = true;
 }
 
@@ -86,7 +107,7 @@ Plugin.register('mop', {
     author: 'yamasung7-dot',
     description: 'Lightweight performance optimizations for Blockbench on mobile devices.',
     icon: 'speed',
-    version: '0.4.0',
+    version: '0.5.0',
     variant: 'both',
     min_version: '4.10.0',
 
