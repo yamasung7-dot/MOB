@@ -7,12 +7,17 @@ let mopToggle;
 let previousSettings = null;
 let enabled = false;
 
+// Only use settings that are known to be live and reversible.
+// Hardware acceleration and anti-aliasing are intentionally excluded because
+// Blockbench marks those settings as requiring a restart.
 const MOP_SETTINGS = [
-    'background_rendering'
+    'background_rendering',
+    'shading'
 ];
 
 function readSetting(key) {
-    return typeof settings !== 'undefined' && settings[key] ? settings[key].value : undefined;
+    if (typeof settings === 'undefined' || !settings[key]) return undefined;
+    return settings[key].value;
 }
 
 function writeSetting(key, value) {
@@ -23,6 +28,7 @@ function writeSetting(key, value) {
 
 function enableMOP() {
     if (enabled) return;
+
     previousSettings = {};
 
     for (const key of MOP_SETTINGS) {
@@ -30,8 +36,13 @@ function enableMOP() {
         if (value !== undefined) previousSettings[key] = value;
     }
 
-    // Do not keep rendering the viewport when Blockbench is in the background.
+    // Avoid rendering the viewport while Blockbench is in the background.
     writeSetting('background_rendering', false);
+
+    // Disable live preview shading. Blockbench applies this through its normal
+    // shading update path, so MOP does not create another render loop.
+    writeSetting('shading', false);
+
     enabled = true;
 }
 
@@ -58,7 +69,7 @@ Plugin.register('mop', {
     author: 'yamasung7-dot',
     description: 'Lightweight performance optimizations for Blockbench on mobile devices.',
     icon: 'speed',
-    version: '0.1.0',
+    version: '0.2.0',
     variant: 'both',
     min_version: '4.10.0',
 
@@ -70,26 +81,27 @@ Plugin.register('mop', {
             condition: () => true,
             click() {
                 setMOPEnabled(!enabled);
-                Blockbench.showQuickMessage(
-                    enabled ? 'MOP enabled' : 'MOP disabled',
-                    1000
-                );
+                if (typeof Blockbench !== 'undefined' && Blockbench.showQuickMessage) {
+                    Blockbench.showQuickMessage(
+                        enabled ? 'MOP enabled' : 'MOP disabled',
+                        1000
+                    );
+                }
             }
         });
 
         mopToggle.updateEnabledState = function() {
-            this.setIcon(enabled ? 'speed' : 'speed');
             this.setName(enabled ? 'MOP: Mobile Optimization ✓' : 'MOP: Mobile Optimization');
         };
 
-        // Put the toggle in Blockbench's Tools/Toolbox menu.
-        if (MenuBar && MenuBar.menus && MenuBar.menus.tools) {
+        // Put the toggle in Blockbench's Tools menu.
+        if (typeof MenuBar !== 'undefined' && MenuBar.menus && MenuBar.menus.tools) {
             MenuBar.menus.tools.addAction(mopToggle);
         }
 
-        // Mobile users get the optimization enabled by default; desktop users can
-        // still enable it manually from the Tools menu.
-        if (Blockbench && Blockbench.isMobile) {
+        // Mobile users get the optimization enabled by default; desktop/web
+        // users can still enable it manually from the Tools menu.
+        if (typeof Blockbench !== 'undefined' && Blockbench.isMobile) {
             setMOPEnabled(true);
         }
     },
