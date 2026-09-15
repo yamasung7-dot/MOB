@@ -2,7 +2,7 @@
 
 A lightweight Blockbench plugin designed to reduce unnecessary editor workload on mobile devices.
 
-## Current prototype — v0.8.0
+## Current prototype — v0.9.0
 
 - Adds a **MOP: Mobile Optimization** toggle to the **Tools** menu.
 - Automatically enables itself on Blockbench mobile.
@@ -18,6 +18,7 @@ A lightweight Blockbench plugin designed to reduce unnecessary editor workload o
 - Disables flipbook texture playback during animation previews while enabled to avoid per-frame flipbook updates.
 - Disables the 3D paint brush cursor while enabled to avoid extra brush-outline viewport work.
 - Disables selection outlines in paint mode while enabled to reduce additional outline rendering.
+- Disables pixel-grid and painting-grid helpers while enabled to reduce extra paint/UV grid geometry and updates.
 - Restores the user's exact previous Blockbench settings when MOP is disabled or unloaded.
 - Restores each preview renderer's previous pixel ratio when MOP is disabled or unloaded.
 - Avoids custom render loops and keeps its own runtime overhead intentionally tiny.
@@ -34,7 +35,7 @@ Blockbench's grid settings feed into `Canvas.buildGrid()`, which constructs view
 
 ## Why paint helpers are disabled
 
-The 3D brush cursor uses a viewport outline that is updated while painting, and Blockbench's paint-mode selection outlines add additional visible outline geometry. MOP disables these optional helpers during optimization mode. This only affects their visual helpers; painting itself remains available.
+The 3D brush cursor uses a viewport outline that is updated while painting, and Blockbench's paint-mode selection outlines add additional visible outline geometry. MOP also disables the optional pixel and painting grids while optimization mode is active. These changes affect only visual helpers; painting itself remains available. The original settings are restored when MOP is disabled.
 
 ## Why flipbook animation is disabled
 
@@ -42,7 +43,7 @@ Blockbench listens for animation frame display events and, when this option is e
 
 ## Why 30 FPS?
 
-The goal of MOP is to reduce sustained GPU/CPU work rather than make Blockbench render faster. A 30 FPS cap gives the preview a predictable upper bound while leaving Blockbench's normal rendering and input systems in control.
+The goal of MOP is to reduce sustained GPU/CPU work rather than make the preview render faster. A 30 FPS cap gives the preview a predictable upper bound while leaving Blockbench's normal rendering and input systems in control.
 
 ## Important design rule
 
