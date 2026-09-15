@@ -12,7 +12,9 @@ let enabled = false;
 // Blockbench marks those settings as requiring a restart.
 const MOP_SETTINGS = [
     'background_rendering',
-    'shading'
+    'shading',
+    'fps_limit',
+    'motion_trails'
 ];
 
 function readSetting(key) {
@@ -43,6 +45,15 @@ function enableMOP() {
     // shading update path, so MOP does not create another render loop.
     writeSetting('shading', false);
 
+    // Cap the preview render loop at a mobile-friendly 30 FPS. Blockbench's
+    // own preview loop reads this setting every frame, so no extra timer is
+    // needed in MOP.
+    writeSetting('fps_limit', 30);
+
+    // Motion trails add scene/animation work and are not needed for ordinary
+    // modeling. They are restored exactly when MOP is disabled.
+    writeSetting('motion_trails', false);
+
     enabled = true;
 }
 
@@ -69,7 +80,7 @@ Plugin.register('mop', {
     author: 'yamasung7-dot',
     description: 'Lightweight performance optimizations for Blockbench on mobile devices.',
     icon: 'speed',
-    version: '0.2.0',
+    version: '0.3.0',
     variant: 'both',
     min_version: '4.10.0',
 
