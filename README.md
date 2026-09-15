@@ -2,13 +2,15 @@
 
 A lightweight Blockbench plugin designed to reduce unnecessary editor workload on mobile devices.
 
-## Current prototype — v0.7.0
+## Current prototype — v0.8.0
 
 - Adds a **MOP: Mobile Optimization** toggle to the **Tools** menu.
 - Automatically enables itself on Blockbench mobile.
 - Disables background preview rendering while Blockbench is unfocused.
 - Disables live preview shading while MOP is enabled.
 - Caps Blockbench's preview rendering at **30 FPS** while enabled.
+- Caps mobile preview renderer pixel ratio at **1.5×** to reduce high-DPI GPU workload.
+- Re-applies the mobile pixel-ratio cap after window/viewport resize events without creating a render loop.
 - Disables animation motion trails while enabled.
 - Disables element highlighting while enabled to reduce repeated highlight updates during pointer movement and selection changes.
 - Disables optional viewport grid geometry while enabled to reduce grid line rendering.
@@ -16,8 +18,15 @@ A lightweight Blockbench plugin designed to reduce unnecessary editor workload o
 - Disables flipbook texture playback during animation previews while enabled to avoid per-frame flipbook updates.
 - Disables the 3D paint brush cursor while enabled to avoid extra brush-outline viewport work.
 - Disables selection outlines in paint mode while enabled to reduce additional outline rendering.
-- Restores the user's exact previous settings when MOP is disabled or unloaded.
+- Restores the user's exact previous Blockbench settings when MOP is disabled or unloaded.
+- Restores each preview renderer's previous pixel ratio when MOP is disabled or unloaded.
 - Avoids custom render loops and keeps its own runtime overhead intentionally tiny.
+
+## Why the mobile pixel-ratio cap exists
+
+Blockbench's preview resize path applies `window.devicePixelRatio` to the WebGL renderer. On a high-density phone, that can make the renderer process substantially more pixels than the same viewport at 1×. MOP caps the renderer at 1.5× on mobile while leaving the CSS/layout size unchanged. The cap is reapplied only after resize events, because Blockbench can reset the renderer pixel ratio during its own resize handling.
+
+The previous pixel ratio of each preview renderer is saved and restored when MOP is disabled or unloaded.
 
 ## Why the grid and ground plane are disabled
 
