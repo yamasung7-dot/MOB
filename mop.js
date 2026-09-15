@@ -7,21 +7,10 @@ let mopToggle;
 let previousSettings = null;
 let enabled = false;
 
-// Only use settings that are known to be live and reversible.
-// Hardware acceleration and anti-aliasing are intentionally excluded because
-// Blockbench marks those settings as requiring a restart.
 const MOP_SETTINGS = [
-    'background_rendering',
-    'shading',
-    'fps_limit',
-    'motion_trails',
-    'highlight_cubes',
-    'grids',
-    'base_grid',
-    'large_grid',
-    'full_grid',
-    'large_box',
-    'flipbook_textures_in_animation'
+    'background_rendering', 'shading', 'fps_limit', 'motion_trails',
+    'highlight_cubes', 'grids', 'base_grid', 'large_grid', 'full_grid',
+    'large_box', 'ground_plane', 'flipbook_textures_in_animation'
 ];
 
 function readSetting(key) {
@@ -37,48 +26,24 @@ function writeSetting(key, value) {
 
 function enableMOP() {
     if (enabled) return;
-
     previousSettings = {};
-
     for (const key of MOP_SETTINGS) {
         const value = readSetting(key);
         if (value !== undefined) previousSettings[key] = value;
     }
 
-    // Avoid rendering the viewport while Blockbench is in the background.
     writeSetting('background_rendering', false);
-
-    // Disable live preview shading. Blockbench applies this through its normal
-    // shading update path, so MOP does not create another render loop.
     writeSetting('shading', false);
-
-    // Cap the preview render loop at a mobile-friendly 30 FPS. Blockbench's
-    // own preview loop reads this setting every frame, so no extra timer is
-    // needed in MOP.
     writeSetting('fps_limit', 30);
-
-    // Motion trails add scene/animation work and are not needed for ordinary
-    // modeling. They are restored exactly when MOP is disabled.
     writeSetting('motion_trails', false);
-
-    // Element highlighting can trigger repeated highlight updates during
-    // pointer movement and selection changes. Disable it to reduce editor
-    // update work while keeping the normal viewport and tools intact.
     writeSetting('highlight_cubes', false);
-
-    // The grid is optional viewport geometry. Turning it off removes grid
-    // line geometry from the preview instead of merely hiding it with CSS.
-    // Keep the individual grid settings in the snapshot so the user's exact
-    // configuration is restored on disable/unload.
     writeSetting('grids', false);
     writeSetting('base_grid', false);
     writeSetting('large_grid', false);
     writeSetting('full_grid', false);
     writeSetting('large_box', false);
-
-    // Flipbook textures are updated whenever an animation frame is displayed.
-    // They are not needed for normal modeling, so skip that extra animation
-    // work while optimization mode is active.
+    // Blockbench's ground plane is a 4096×4096 Three.js plane.
+    writeSetting('ground_plane', false);
     writeSetting('flipbook_textures_in_animation', false);
 
     enabled = true;
@@ -86,13 +51,11 @@ function enableMOP() {
 
 function disableMOP() {
     if (!enabled) return;
-
     if (previousSettings) {
         for (const [key, value] of Object.entries(previousSettings)) {
             writeSetting(key, value);
         }
     }
-
     previousSettings = null;
     enabled = false;
 }
@@ -107,7 +70,7 @@ Plugin.register('mop', {
     author: 'yamasung7-dot',
     description: 'Lightweight performance optimizations for Blockbench on mobile devices.',
     icon: 'speed',
-    version: '0.5.0',
+    version: '0.6.0',
     variant: 'both',
     min_version: '4.10.0',
 
@@ -120,28 +83,17 @@ Plugin.register('mop', {
             click() {
                 setMOPEnabled(!enabled);
                 if (typeof Blockbench !== 'undefined' && Blockbench.showQuickMessage) {
-                    Blockbench.showQuickMessage(
-                        enabled ? 'MOP enabled' : 'MOP disabled',
-                        1000
-                    );
+                    Blockbench.showQuickMessage(enabled ? 'MOP enabled' : 'MOP disabled', 1000);
                 }
             }
         });
-
         mopToggle.updateEnabledState = function() {
             this.setName(enabled ? 'MOP: Mobile Optimization ✓' : 'MOP: Mobile Optimization');
         };
-
-        // Put the toggle in Blockbench's Tools menu.
         if (typeof MenuBar !== 'undefined' && MenuBar.menus && MenuBar.menus.tools) {
             MenuBar.menus.tools.addAction(mopToggle);
         }
-
-        // Mobile users get the optimization enabled by default; desktop/web
-        // users can still enable it manually from the Tools menu.
-        if (typeof Blockbench !== 'undefined' && Blockbench.isMobile) {
-            setMOPEnabled(true);
-        }
+        if (typeof Blockbench !== 'undefined' && Blockbench.isMobile) setMOPEnabled(true);
     },
 
     onunload() {
